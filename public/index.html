@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sign in</title>
+
+    <!-- <meta name="google-signin-client_id" content="8148925901-dlg68dhlehim8f9nol5ltjd5v4k4koh8.apps.googleusercontent.com"> -->
+    
+</head>
+<body>
+    <h1>Google Sign in</h1>
+    <hr>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+   
+    
+    <div id="buttonDiv"></div> 
+    <a href="#" onclick="onSignout();">Sign out</a>
+
+    <script>
+        let url = window.location.hostname.includes( 'localhost' )
+            ? 'http://localhost:8080/api/auth/google'
+            : 'https://restserver-node-jngs.herokuapp.com/api/auth/google';
+
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: '8148925901-dlg68dhlehim8f9nol5ltjd5v4k4koh8.apps.googleusercontent.com',
+                auto_prompt: false,
+                callback: handleCredentialResponse
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById("buttonDiv"),
+                { 
+                    theme: "outline", 
+                    size: "large",
+                    native_callback: handleCredentialResponse
+                }  // customization attributes
+            );            
+            google.accounts.id.prompt();
+        };
+
+        function onSignout() {  
+            google.accounts.id.revoke( credential.email, done => {
+                console.log( 'Disconnected' );
+            }); 
+        }
+
+        function parseJwt (token) {
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace('-', '+').replace('_', '/');
+            return JSON.parse(window.atob(base64));
+        };
+
+        function handleCredentialResponse(response) {
+            credential =   parseJwt( response.credential );
+            const data = { id_token: response.credential };
+            // console.log(data);
+
+            fetch( url, {
+                method: 'POST',
+                headers: { 'Content-type': 'application/json' },
+                body: JSON.stringify( data )
+            })
+            .then( resp => resp.json() )
+            .then( data => console.log( 'Server: ', data ) )
+            .catch( console.log );
+        }
+    </script>
+</body>
+</html>
